@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLAT Financial Model — Grantor Charitable Lead Annuity Trust</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #1e3a5f;
+      --navy-dark:   #152d4a;
+      --blue:        #2563eb;
+      --bg:          #f1f5f9;
+      --card:        #ffffff;
+      --text:        #0f172a;
+      --muted:       #64748b;
+      --green:       #16a34a;
+      --orange:      #d97706;
+      --red:         #dc2626;
+      --border:      #e2e8f0;
+      --shadow:      0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.04);
+      --radius:      12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      font-size: 15px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: var(--navy);
+      color: white;
+      padding: 22px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .app-header h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; }
+    .app-header .subtitle { color: rgba(255,255,255,.6); font-size: .85rem; margin-top: 2px; }
+    .irs-rates {
+      margin-left: auto;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: .78rem;
+      color: rgba(255,255,255,.8);
+      white-space: nowrap;
+    }
+    .irs-rates strong { color: white; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-header h2 {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .step-pill {
+      background: var(--navy);
+      color: white;
+      font-size: .62rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: .05em;
+    }
+    .card-body { padding: 24px 28px; }
+
+    /* ── Inputs ── */
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 20px;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .field-hint { font-size: .7rem; color: var(--muted); line-height: 1.4; }
+    .input-wrap { position: relative; }
+    .adorn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: .88rem;
+      pointer-events: none;
+      user-select: none;
+    }
+    .adorn.left  { left: 11px; }
+    .adorn.right { right: 11px; }
+    .input-wrap input[type="number"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .95rem;
+      font-weight: 500;
+      color: var(--text);
+      background: #fafcff;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      -moz-appearance: textfield;
+    }
+    .input-wrap input[type="number"]::-webkit-outer-spin-button,
+    .input-wrap input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
+    .input-wrap input[type="number"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+    .input-wrap.with-left  input { padding-left: 26px; }
+    .input-wrap.with-right input { padding-right: 28px; }
+
+    /* ── Metric Cards ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .metric {
+      background: var(--navy);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      color: white;
+    }
+    .metric.green { background: linear-gradient(135deg, #15803d, #22c55e); }
+    .metric-label {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      opacity: .65;
+      margin-bottom: 6px;
+    }
+    .metric-value {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+    }
+    .metric-desc { font-size: .7rem; opacity: .6; margin-top: 5px; }
+
+    /* ── Explanation ── */
+    .explanation {
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: .9rem;
+      line-height: 1.75;
+      color: #1e3a5f;
+    }
+
+    /* ── Mode Toggle ── */
+    .toggle-group {
+      display: inline-flex;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .toggle-btn {
+      padding: 8px 20px;
+      font-size: .84rem;
+      font-weight: 600;
+      border: none;
+      background: white;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .toggle-btn + .toggle-btn { border-left: 1.5px solid var(--border); }
+    .toggle-btn.active { background: var(--navy); color: white; }
+
+    /* ── Custom Controls ── */
+    .custom-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .slider-field { flex: 1; min-width: 220px; }
+    .slider-field label {
+      display: block;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      appearance: none;
+      background: var(--border);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--navy);
+      border: 2.5px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+      cursor: pointer;
+    }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: .67rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .slider-pct {
+      font-size: .82rem;
+      color: var(--muted);
+      min-width: 100px;
+      padding-bottom: 2px;
+    }
+
+    /* ── Status Badge ── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: .82rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .badge-zeroed  { background: #dcfce7; color: #15803d; }
+    .badge-taxable { background: #fee2e2; color: #b91c1c; }
+    .badge-above   { background: #fef3c7; color: #92400e; }
+
+    /* ── Sensitivity Table ── */
+    .sens-section-label {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin: 20px 0 6px;
+    }
+    .sens-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    .sens-table th {
+      background: #f8fafc;
+      padding: 9px 12px;
+      text-align: right;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .sens-table th:first-child { text-align: left; }
+    .sens-table td {
+      padding: 9px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    .sens-table td:first-child { text-align: left; font-weight: 600; }
+    .sens-table tr.sens-active { background: #eff6ff; }
+    .sens-table tr.sens-active td { font-weight: 700; }
+
+    /* ── Cash Flow Table ── */
+    .cf-wrap { overflow-x: auto; }
+    .cf-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+      min-width: 700px;
+    }
+    .cf-table thead tr { background: var(--navy); color: white; }
+    .cf-table thead th {
+      padding: 12px 16px;
+      text-align: right;
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      white-space: nowrap;
+    }
+    .cf-table thead th:first-child { text-align: center; }
+    .cf-table tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    .cf-table tbody tr:hover { background: #f8fafc; }
+    .cf-table tbody tr.total-row {
+      background: #f0fdf4;
+      border-top: 2px solid var(--green);
+      font-weight: 700;
+    }
+    .cf-table tbody td { padding: 10px 16px; text-align: right; }
+    .cf-table tbody td:first-child { text-align: center; font-weight: 700; color: var(--navy); }
+    .c-pos  { color: var(--green); }
+    .c-neg  { color: var(--red); }
+    .c-warn { color: var(--orange); }
+    .c-rem  { color: #15803d; font-weight: 700; }
+
+    /* ── Chart ── */
+    .chart-wrap { height: 300px; position: relative; }
+
+    /* ── Assumptions ── */
+    .assumptions {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 28px;
+    }
+    .assumptions li {
+      font-size: .83rem;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      line-height: 1.5;
+    }
+    .assumptions li::before { content: "›"; color: var(--blue); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Actions ── */
+    .actions-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      border: none;
+    }
+    .btn-outline { background: white; color: var(--navy); border: 2px solid var(--navy); }
+    .btn-outline:hover { background: #f1f5f9; }
+    .btn-primary { background: var(--navy); color: white; }
+    .btn-primary:hover { background: var(--navy-dark); }
+
+    /* ── Print ── */
+    @media print {
+      body { background: white; font-size: 11pt; }
+      .app-header { background: var(--navy) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .metric, .cf-table thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+      .actions-row { display: none !important; }
+      .container { padding: 12px; gap: 12px; }
+      .toggle-group { display: none; }
+      #custom-controls { display: none !important; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .app-header { padding: 18px 20px; }
+      .irs-rates { margin-left: 0; }
+      .card-body { padding: 18px 20px; }
+      .assumptions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1>CLAT Financial Model</h1>
+    <p class="subtitle">Grantor Charitable Lead Annuity Trust — Interactive Tax Planning Tool</p>
+  </div>
+  <div class="irs-rates">
+    §7520 Rate &nbsp;|&nbsp;
+    <strong>Feb 2026: 4.60%</strong> &nbsp;·&nbsp;
+    Jan 2026: 4.60% &nbsp;·&nbsp;
+    Mar 2026: 4.80%
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── STEP 1: Inputs ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-pill">STEP 1</div>
+      <h2>Trust Parameters</h2>
+    </div>
+    <div class="card-body">
+      <div class="inputs-grid">
+
+        <div class="field">
+          <label>IRS §7520 Rate</label>
+          <div class="input-wrap with-right">
+            <input type="number" id="inp-rate" value="4.60" step="0.01" min="0.01" max="20" oninput="recalculate()" />
+            <span class="adorn right">%</span>
+          </div>
+          <div class="field-hint">Hurdle rate used for PV calculations. You may elect either of the two preceding months.</div>
+        </div>
+
+        <div class="field">
+          <label>Trust Term</label>
+          <div class="input-wrap with-right">
+            <input type="number" id="inp-term" value="10" step="1" min="1" max="40" oninput="recalculate()" />
+            <span class="adorn right">yrs</span>
+          </div>
+          <div class="field-hint">Number of years charity receives annuity payments</div>
+        </div>
+
+        <div class="field">
+          <label>Capital Contributed</label>
+          <div class="input-wrap with-left">
+            <span class="adorn left">$</span>
+            <input type="number" id="inp-capital" value="1000000" step="50000" min="1" oninput="recalculate()" />
+          </div>
+          <div class="field-hint">Initial trust funding amount</div>
+        </div>
+
+        <div class="field">
+          <label>Investment Return</label>
+          <div class="input-wrap with-right">
+            <input type="number" id="inp-return" value="7.00" step="0.25" min="0" max="30" oninput="recalculate()" />
+            <span class="adorn right">%</span>
+          </div>
+          <div class="field-hint">Annual assumed growth rate of trust assets</div>
+        </div>
+
+        <div class="field">
+          <label>Grantor Marginal Tax Rate</label>
+          <div class="input-wrap with-right">
+            <input type="number" id="inp-taxrate" value="37" step="1" min="0" max="65" oninput="recalculate()" />
+            <span class="adorn right">%</span>
+          </div>
+          <div class="field-hint">For estimating annual income taxes owed by grantor on trust income</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Intermediate Calculations ── -->
+  <div class="metrics-row">
+    <div class="metric">
+      <div class="metric-label">Annuity Factor</div>
+      <div class="metric-value" id="m-factor">—</div>
+      <div class="metric-desc">PV of $1/yr at §7520 rate for <span id="m-term-desc">n</span> yrs</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Min. Annual Charity Payment</div>
+      <div class="metric-value" id="m-minpmt">—</div>
+      <div class="metric-desc">Required for a zeroed-out CLAT (zero gift tax)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">PV of Charitable Interest</div>
+      <div class="metric-value" id="m-pv">—</div>
+      <div class="metric-desc">= Capital contributed when zeroed-out; also your income tax deduction</div>
+    </div>
+    <div class="metric green">
+      <div class="metric-label">Projected Remainder to Heirs</div>
+      <div class="metric-value" id="m-remainder">—</div>
+      <div class="metric-desc">Trust balance at end of term; passes gift/estate-tax free</div>
+    </div>
+  </div>
+
+  <div class="explanation" id="explanation-box">
+    Adjust trust parameters above to see your CLAT model.
+  </div>
+
+  <!-- ── STEP 3: Contribution Mode & Sensitivity ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-pill">STEP 3</div>
+      <h2>Contribution Mode &amp; Sensitivity Analysis</h2>
+    </div>
+    <div class="card-body">
+
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="btn-zeroed" onclick="setMode('zeroed')">
+          Zeroed-Out CLAT &nbsp;(Zero Gift Tax)
+        </button>
+        <button class="toggle-btn" id="btn-custom" onclick="setMode('custom')">
+          Custom Contribution
+        </button>
+      </div>
+
+      <div id="custom-controls" style="display:none">
+        <div class="custom-row">
+          <div class="field" style="flex:0 0 220px">
+            <label>Annual Charity Payment</label>
+            <div class="input-wrap with-left">
+              <span class="adorn left">$</span>
+              <input type="number" id="inp-custom" step="1000" oninput="onCustomInput()" />
+            </div>
+          </div>
+          <div class="slider-field">
+            <label>Adjust vs. minimum payment</label>
+            <input type="range" id="pct-slider" min="50" max="200" value="100" step="1" oninput="onSlider()" />
+            <div class="slider-labels">
+              <span>50%</span><span>75%</span><span>100%</span><span>150%</span><span>200%</span>
+            </div>
+          </div>
+          <div class="slider-pct" id="slider-pct-label"></div>
+        </div>
+      </div>
+
+      <div id="status-wrap"></div>
+
+      <div class="sens-section-label">Sensitivity: Remainder vs. Annual Payment Level</div>
+      <table class="sens-table">
+        <thead>
+          <tr>
+            <th>% of Min. Payment</th>
+            <th>Annual Payment</th>
+            <th>Cumul. Charitable Giving</th>
+            <th>Projected Remainder</th>
+            <th>Gift Tax Status</th>
+          </tr>
+        </thead>
+        <tbody id="sens-body"></tbody>
+      </table>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:8px;">
+        Highlighted row = current contribution. Contributions below the minimum create a taxable gift; above the minimum increase the charitable gift and reduce the remainder.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Annual Cash Flow Table ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-pill">STEP 4</div>
+      <h2>Annual Cash Flow Projection</h2>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="cf-wrap">
+        <table class="cf-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Opening Balance</th>
+              <th>Investment Growth</th>
+              <th>Charitable Contribution</th>
+              <th>Taxes Due (Grantor)*</th>
+              <th>Ending Balance</th>
+            </tr>
+          </thead>
+          <tbody id="cf-body"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 20px;font-size:.72rem;color:var(--muted);border-top:1px solid var(--border)">
+        * Taxes Due shown for grantor cash-flow planning only. Per grantor trust rules, taxes are paid by the grantor from personal funds — trust balance is <strong>not reduced</strong>. This is a key tax advantage of the grantor CLAT structure.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Chart ── -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Trust Balance vs. Cumulative Charitable Giving</h2>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap">
+        <canvas id="main-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Assumptions ── -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Key Assumptions &amp; Disclosures</h2>
+    </div>
+    <div class="card-body">
+      <ul class="assumptions">
+        <li>Annual annuity payments are made at the <strong>end of each year</strong></li>
+        <li>Investment growth is applied to the <strong>opening balance</strong> for the year</li>
+        <li>The grantor pays income taxes <strong>outside the trust</strong> — trust balance is unaffected (key benefit of grantor CLAT structure)</li>
+        <li>The §7520 rate is the rate in effect at trust creation; grantor may elect either of the two preceding months' rates</li>
+        <li>The model assumes a <strong>fixed investment return</strong> each year with no market volatility</li>
+        <li>The upfront income tax deduction equals the PV of the charitable annuity stream, subject to 30%/60% of AGI limits with a 5-year carryforward (IRC §170)</li>
+        <li>Governed by IRC §2055(e)(2)(B) for gift/estate tax treatment and IRC §170 for grantor income tax deduction</li>
+        <li>This tool is for <strong>educational and planning purposes only</strong> — not legal or tax advice. Consult a qualified estate planning attorney and CPA.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── Actions ── -->
+  <div class="actions-row">
+    <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+    <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+'use strict';
+
+// ── State ──────────────────────────────────────────────
+let appMode    = 'zeroed';
+let lastResult = null;
+let chartInst  = null;
+
+// ── Formatting ─────────────────────────────────────────
+function fmtC(n) {
+  if (!isFinite(n)) return '—';
+  const sign = n < 0 ? '-' : '';
+  return sign + '$' + Math.abs(Math.round(n)).toLocaleString('en-US');
+}
+function fmtPct(n, d = 2) {
+  return n.toFixed(d) + '%';
+}
+
+// ── Core Math ──────────────────────────────────────────
+function annuityFactor(r, n) {
+  if (r === 0) return n;
+  return (1 - Math.pow(1 + r, -n)) / r;
+}
+
+function runModel(capital, retRate, payment, taxRate, term) {
+  const rows = [];
+  let bal = capital;
+  let cumCharity = 0;
+  const balHist     = [capital];
+  const charityHist = [0];
+
+  for (let y = 1; y <= term; y++) {
+    const open   = bal;
+    const growth = open * retRate;
+    const taxes  = growth * taxRate;
+    const end    = open + growth - payment;   // taxes NOT deducted from trust
+    cumCharity  += payment;
+    bal          = end;
+
+    rows.push({ year: y, open, growth, charity: payment, taxes, end });
+    balHist.push(end);
+    charityHist.push(cumCharity);
+  }
+  return { rows, remainder: bal, balHist, charityHist };
+}
+
+// ── Main Recalculate ───────────────────────────────────
+function recalculate() {
+  const rate    = parseFloat(document.getElementById('inp-rate').value)    / 100;
+  const term    = parseInt  (document.getElementById('inp-term').value,    10);
+  const capital = parseFloat(document.getElementById('inp-capital').value);
+  const retRate = parseFloat(document.getElementById('inp-return').value)  / 100;
+  const taxRate = parseFloat(document.getElementById('inp-taxrate').value) / 100;
+
+  if (!isFinite(rate) || !isFinite(term) || !isFinite(capital) ||
+      !isFinite(retRate) || !isFinite(taxRate)) return;
+  if (rate <= 0 || term < 1 || capital <= 0) return;
+
+  const af         = annuityFactor(rate, term);
+  const minPayment = capital / af;
+  const pvCharity  = minPayment * af;           // = capital when zeroed-out
+
+  // Determine actual payment
+  let actualPayment;
+  if (appMode === 'zeroed') {
+    actualPayment = minPayment;
+    document.getElementById('inp-custom').value = Math.round(minPayment);
+    document.getElementById('pct-slider').value = 100;
+    updateSliderBg(100);
+    document.getElementById('slider-pct-label').textContent = '';
+  } else {
+    const cv = parseFloat(document.getElementById('inp-custom').value);
+    actualPayment = isNaN(cv) ? minPayment : cv;
+    const pct = (actualPayment / minPayment) * 100;
+    const clamped = Math.min(200, Math.max(50, pct));
+    document.getElementById('pct-slider').value = clamped;
+    updateSliderBg(clamped);
+    document.getElementById('slider-pct-label').textContent =
+      pct.toFixed(1) + '% of minimum';
+  }
+
+  const model = runModel(capital, retRate, actualPayment, taxRate, term);
+
+  lastResult = {
+    rate, term, capital, retRate, taxRate,
+    af, minPayment, pvCharity, actualPayment,
+    ...model
+  };
+
+  renderMetrics();
+  renderExplanation();
+  renderStatusBadge();
+  renderSensTable();
+  renderCFTable();
+  renderChart();
+}
+
+// ── Metrics ────────────────────────────────────────────
+function renderMetrics() {
+  const { af, minPayment, pvCharity, remainder, term } = lastResult;
+  document.getElementById('m-factor').textContent    = af.toFixed(6);
+  document.getElementById('m-term-desc').textContent = term;
+  document.getElementById('m-minpmt').textContent    = fmtC(minPayment);
+  document.getElementById('m-pv').textContent        = fmtC(pvCharity);
+  document.getElementById('m-remainder').textContent = fmtC(remainder);
+}
+
+// ── Explanation ────────────────────────────────────────
+function renderExplanation() {
+  const { rate, retRate, term, capital, minPayment, pvCharity, remainder, taxRate, pvCharity: pv, af } = lastResult;
+  const { actualPayment } = lastResult;
+  const deduction    = actualPayment * af;
+  const taxSavings   = deduction * taxRate;
+  const excessBps    = ((retRate - rate) * 100).toFixed(2);
+  const beating      = retRate > rate;
+
+  document.getElementById('explanation-box').innerHTML = `
+    Paying <strong>${fmtC(actualPayment)}/year</strong> to charity for <strong>${term} years</strong>
+    gives the IRS an annuity stream valued at <strong>${fmtC(deduction)}</strong>
+    ${Math.abs(deduction - capital) < 1
+      ? '— equal to your full contribution, resulting in <strong>zero gift tax</strong> on the remainder interest'
+      : `(${fmtC(deduction - capital > 0 ? deduction - capital : capital - deduction)}
+         ${deduction >= capital ? 'above' : 'below'} your contribution)`}.
+    The grantor claims an upfront income tax deduction of <strong>${fmtC(deduction)}</strong>,
+    potentially saving <strong>${fmtC(taxSavings)}</strong> in federal income taxes
+    (at the ${fmtPct(lastResult.taxRate * 100)} marginal rate), subject to AGI limitations.
+    ${beating
+      ? `Your <strong>${fmtPct(retRate * 100)}</strong> return exceeds the §7520 hurdle rate of
+         <strong>${fmtPct(rate * 100)}</strong> by <strong>${excessBps} bps</strong> —
+         excess growth of <strong>${fmtC(remainder)}</strong> passes to remainder beneficiaries
+         gift/estate-tax free.`
+      : `Note: your assumed return of <strong>${fmtPct(retRate * 100)}</strong> is at or below
+         the §7520 hurdle rate of <strong>${fmtPct(rate * 100)}</strong>;
+         the trust may not produce a meaningful remainder for heirs.`}
+  `;
+}
+
+// ── Status Badge ───────────────────────────────────────
+function renderStatusBadge() {
+  const { actualPayment, minPayment, af, capital } = lastResult;
+  const diff = actualPayment - minPayment;
+  const pctAbove = ((actualPayment / minPayment - 1) * 100);
+  let html;
+
+  if (Math.abs(diff) < 0.50) {
+    html = `<div class="status-badge badge-zeroed">✓ Zeroed-Out CLAT — Zero Gift Tax on Remainder Interest</div>`;
+  } else if (actualPayment < minPayment) {
+    const taxableGift = capital - (actualPayment * af);
+    html = `<div class="status-badge badge-taxable">⚠ Below Minimum — Taxable Gift on Remainder ≈ ${fmtC(taxableGift)}</div>`;
+  } else {
+    html = `<div class="status-badge badge-above">↑ ${Math.abs(pctAbove).toFixed(1)}% above minimum — Larger charitable gift, smaller remainder to heirs</div>`;
+  }
+  document.getElementById('status-wrap').innerHTML = html;
+}
+
+// ── Sensitivity Table ──────────────────────────────────
+function renderSensTable() {
+  const { minPayment, capital, retRate, taxRate, term, actualPayment, af } = lastResult;
+  const percents = [75, 90, 100, 110, 125, 150];
+  const tbody = document.getElementById('sens-body');
+  tbody.innerHTML = '';
+
+  percents.forEach(pct => {
+    const payment     = minPayment * (pct / 100);
+    const { remainder } = runModel(capital, retRate, payment, taxRate, term);
+    const cumCharity  = payment * term;
+    const isActive    = Math.abs(payment - actualPayment) < 0.50;
+
+    let statusHtml;
+    if (pct === 100) {
+      statusHtml = '<span style="color:#15803d;font-weight:700;">Zeroed-Out</span>';
+    } else if (pct < 100) {
+      const taxableGift = capital - (payment * af);
+      statusHtml = `<span style="color:#b91c1c;">Taxable gift ≈ ${fmtC(taxableGift)}</span>`;
+    } else {
+      statusHtml = `<span style="color:#92400e;">Extra charitable gift</span>`;
+    }
+
+    const tr = document.createElement('tr');
+    if (isActive) tr.classList.add('sens-active');
+    tr.innerHTML = `
+      <td>${pct === 100 ? '<strong>100% (Minimum)</strong>' : pct + '%'}</td>
+      <td>${fmtC(payment)}</td>
+      <td>${fmtC(cumCharity)}</td>
+      <td ${remainder < 0 ? 'style="color:var(--red)"' : ''}>${fmtC(remainder)}</td>
+      <td>${statusHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Cash Flow Table ────────────────────────────────────
+function renderCFTable() {
+  const { rows, remainder } = lastResult;
+  const tbody = document.getElementById('cf-body');
+  tbody.innerHTML = '';
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.year}</td>
+      <td>${fmtC(r.open)}</td>
+      <td class="c-pos">${fmtC(r.growth)}</td>
+      <td class="c-neg">(${fmtC(r.charity)})</td>
+      <td class="c-warn">${fmtC(r.taxes)}</td>
+      <td ${r.end < 0 ? 'class="c-neg"' : ''}>${fmtC(r.end)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Totals row
+  const totGrowth  = rows.reduce((s, r) => s + r.growth,  0);
+  const totCharity = rows.reduce((s, r) => s + r.charity, 0);
+  const totTaxes   = rows.reduce((s, r) => s + r.taxes,   0);
+  const trTot = document.createElement('tr');
+  trTot.classList.add('total-row');
+  trTot.innerHTML = `
+    <td class="c-rem">Total / Remainder</td>
+    <td></td>
+    <td class="c-pos">${fmtC(totGrowth)}</td>
+    <td class="c-neg">(${fmtC(totCharity)})</td>
+    <td class="c-warn">${fmtC(totTaxes)}</td>
+    <td class="c-rem">${fmtC(remainder)}</td>
+  `;
+  tbody.appendChild(trTot);
+}
+
+// ── Chart ──────────────────────────────────────────────
+function renderChart() {
+  const { balHist, charityHist, term } = lastResult;
+  const labels = balHist.map((_, i) => i === 0 ? 'Start' : `Yr ${i}`);
+
+  if (chartInst) {
+    chartInst.data.labels            = labels;
+    chartInst.data.datasets[0].data  = balHist;
+    chartInst.data.datasets[1].data  = charityHist;
+    chartInst.update('none');
+    return;
+  }
+
+  const ctx = document.getElementById('main-chart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Trust Balance',
+          data: balHist,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,.09)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#2563eb',
+        },
+        {
+          label: 'Cumulative Charitable Giving',
+          data: charityHist,
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22,163,74,.07)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#16a34a',
+          borderDash: [6, 4],
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: { size: 12 },
+            usePointStyle: true,
+            pointStyleWidth: 18,
+          }
+        },
+        tooltip: {
+          padding: 12,
+          callbacks: {
+            label: ctx => `  ${ctx.dataset.label}: ${fmtC(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => {
+              const a = Math.abs(v);
+              const s = v < 0 ? '-' : '';
+              if (a >= 1e6) return s + '$' + (a / 1e6).toFixed(1) + 'M';
+              if (a >= 1e3) return s + '$' + (a / 1e3).toFixed(0) + 'K';
+              return s + '$' + a;
+            },
+            font: { size: 11 }
+          },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        x: {
+          ticks: { font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        }
+      }
+    }
+  });
+}
+
+// ── Mode Toggle ────────────────────────────────────────
+function setMode(m) {
+  appMode = m;
+  document.getElementById('btn-zeroed').classList.toggle('active', m === 'zeroed');
+  document.getElementById('btn-custom').classList.toggle('active', m === 'custom');
+  document.getElementById('custom-controls').style.display = m === 'custom' ? 'block' : 'none';
+  if (m === 'custom' && lastResult) {
+    document.getElementById('inp-custom').value = Math.round(lastResult.minPayment);
+  }
+  recalculate();
+}
+
+// ── Slider Sync ────────────────────────────────────────
+function updateSliderBg(pct) {
+  const s = document.getElementById('pct-slider');
+  const frac = ((pct - +s.min) / (+s.max - +s.min)) * 100;
+  s.style.background =
+    `linear-gradient(to right, #2563eb ${frac}%, #e2e8f0 ${frac}%)`;
+}
+
+function onSlider() {
+  if (!lastResult) return;
+  const pct     = parseFloat(document.getElementById('pct-slider').value);
+  const payment = lastResult.minPayment * (pct / 100);
+  document.getElementById('inp-custom').value = Math.round(payment);
+  updateSliderBg(pct);
+  document.getElementById('slider-pct-label').textContent = pct.toFixed(0) + '% of minimum';
+  recalculate();
+}
+
+function onCustomInput() {
+  if (!lastResult) return;
+  const payment = parseFloat(document.getElementById('inp-custom').value);
+  if (isNaN(payment)) return;
+  const pct     = (payment / lastResult.minPayment) * 100;
+  const clamped = Math.min(200, Math.max(50, pct));
+  document.getElementById('pct-slider').value = clamped;
+  updateSliderBg(clamped);
+  document.getElementById('slider-pct-label').textContent = pct.toFixed(1) + '% of minimum';
+  recalculate();
+}
+
+// ── CSV Export ─────────────────────────────────────────
+function exportCSV() {
+  if (!lastResult) return;
+  const { rows, af, minPayment, pvCharity, remainder, actualPayment,
+          capital, rate, retRate, taxRate, term } = lastResult;
+
+  const lines = [
+    ['CLAT Financial Model Export'],
+    [],
+    ['Parameters'],
+    ['IRS §7520 Rate',            fmtPct(rate    * 100)],
+    ['Trust Term (years)',         term],
+    ['Capital Contributed',        Math.round(capital)],
+    ['Investment Return',          fmtPct(retRate * 100)],
+    ['Grantor Marginal Tax Rate',  fmtPct(taxRate * 100)],
+    [],
+    ['Key Metrics'],
+    ['Annuity Factor',             af.toFixed(6)],
+    ['Min Annual Charity Payment', Math.round(minPayment)],
+    ['PV of Charitable Interest',  Math.round(pvCharity)],
+    ['Annual Contribution Used',   Math.round(actualPayment)],
+    ['Projected Remainder',        Math.round(remainder)],
+    [],
+    ['Annual Cash Flow'],
+    ['Year','Opening Balance','Investment Growth','Charitable Contribution','Taxes Due (Grantor)','Ending Balance'],
+    ...rows.map(r => [r.year, Math.round(r.open), Math.round(r.growth),
+                      Math.round(r.charity), Math.round(r.taxes), Math.round(r.end)]),
+    ['REMAINDER','','','','', Math.round(remainder)],
+  ];
+
+  const csv  = lines.map(row => row.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'CLAT_Model.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Init ───────────────────────────────────────────────
+recalculate();
+</script>
+</body>
+</html>
