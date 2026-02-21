@@ -188,28 +188,7 @@
       color: #1e3a5f;
     }
 
-    /* ── Mode Toggle ── */
-    .toggle-group {
-      display: inline-flex;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-    .toggle-btn {
-      padding: 8px 20px;
-      font-size: .84rem;
-      font-weight: 600;
-      border: none;
-      background: white;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .toggle-btn + .toggle-btn { border-left: 1.5px solid var(--border); }
-    .toggle-btn.active { background: var(--navy); color: white; }
-
-    /* ── Custom Controls ── */
+    /* ── Contribution Controls ── */
     .custom-row {
       display: flex;
       align-items: flex-end;
@@ -259,6 +238,7 @@
       min-width: 100px;
       padding-bottom: 2px;
     }
+    .btn-sm { padding: 6px 14px; font-size: .8rem; }
 
     /* ── Status Badge ── */
     .status-badge {
@@ -312,7 +292,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: .88rem;
-      min-width: 700px;
+      min-width: 840px;
     }
     .cf-table thead tr { background: var(--navy); color: white; }
     .cf-table thead th {
@@ -387,8 +367,7 @@
       .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
       .actions-row { display: none !important; }
       .container { padding: 12px; gap: 12px; }
-      .toggle-group { display: none; }
-      #custom-controls { display: none !important; }
+      .btn-sm { display: none; }
     }
 
     /* ── Responsive ── */
@@ -511,32 +490,24 @@
     </div>
     <div class="card-body">
 
-      <div class="toggle-group">
-        <button class="toggle-btn active" id="btn-zeroed" onclick="setMode('zeroed')">
-          Zeroed-Out CLAT &nbsp;(Zero Gift Tax)
-        </button>
-        <button class="toggle-btn" id="btn-custom" onclick="setMode('custom')">
-          Custom Contribution
-        </button>
-      </div>
-
-      <div id="custom-controls" style="display:none">
-        <div class="custom-row">
-          <div class="field" style="flex:0 0 220px">
-            <label>Annual Charity Payment</label>
-            <div class="input-wrap with-left">
-              <span class="adorn left">$</span>
-              <input type="number" id="inp-custom" step="1000" oninput="onCustomInput()" />
-            </div>
+      <div class="custom-row">
+        <div class="field" style="flex:0 0 220px">
+          <label>Annual Charity Payment</label>
+          <div class="input-wrap with-left">
+            <span class="adorn left">$</span>
+            <input type="number" id="inp-custom" step="1000" oninput="onCustomInput()" />
           </div>
-          <div class="slider-field">
-            <label>Adjust vs. minimum payment</label>
-            <input type="range" id="pct-slider" min="50" max="200" value="100" step="1" oninput="onSlider()" />
-            <div class="slider-labels">
-              <span>50%</span><span>75%</span><span>100%</span><span>150%</span><span>200%</span>
-            </div>
+        </div>
+        <div class="slider-field">
+          <label>Adjust vs. minimum payment</label>
+          <input type="range" id="pct-slider" min="50" max="150" value="100" step="1" oninput="onSlider()" />
+          <div class="slider-labels">
+            <span>50%</span><span>75%</span><span>100%</span><span>125%</span><span>150%</span>
           </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:2px;">
           <div class="slider-pct" id="slider-pct-label"></div>
+          <button class="btn btn-outline btn-sm" onclick="resetToMin()">Reset to Minimum</button>
         </div>
       </div>
 
@@ -578,6 +549,7 @@
               <th>Investment Growth</th>
               <th>Charitable Contribution</th>
               <th>Taxes Due (Grantor)*</th>
+              <th>PV of Taxes Due*</th>
               <th>Ending Balance</th>
             </tr>
           </thead>
@@ -585,7 +557,7 @@
         </table>
       </div>
       <div style="padding:12px 20px;font-size:.72rem;color:var(--muted);border-top:1px solid var(--border)">
-        * Taxes Due shown for grantor cash-flow planning only. Per grantor trust rules, taxes are paid by the grantor from personal funds — trust balance is <strong>not reduced</strong>. This is a key tax advantage of the grantor CLAT structure.
+        * Taxes Due shown for grantor cash-flow planning only. Taxes are paid by the grantor from personal funds — trust balance is <strong>not reduced</strong>. PV of Taxes Due discounts each year's tax liability back to today using the investment return rate, reflecting the opportunity cost of funds needed to cover those taxes.
       </div>
     </div>
   </div>
@@ -633,7 +605,7 @@
 'use strict';
 
 // ── State ──────────────────────────────────────────────
-let appMode    = 'zeroed';
+let currentPct = 100;   // percentage of minPayment; preserved across parameter changes
 let lastResult = null;
 let chartInst  = null;
 
@@ -653,7 +625,7 @@ function annuityFactor(r, n) {
   return (1 - Math.pow(1 + r, -n)) / r;
 }
 
-function runModel(capital, retRate, payment, taxRate, term) {
+function runModel(capital, retRate, payment, taxRate, rate, term) {
   const rows = [];
   let bal = capital;
   let cumCharity = 0;
@@ -664,11 +636,12 @@ function runModel(capital, retRate, payment, taxRate, term) {
     const open   = bal;
     const growth = open * retRate;
     const taxes  = growth * taxRate;
-    const end    = open + growth - payment;   // taxes NOT deducted from trust
+    const pvTax  = taxes / Math.pow(1 + retRate, y);  // PV discounted at investment return rate
+    const end    = open + growth - payment;          // taxes NOT deducted from trust
     cumCharity  += payment;
     bal          = end;
 
-    rows.push({ year: y, open, growth, charity: payment, taxes, end });
+    rows.push({ year: y, open, growth, charity: payment, taxes, pvTax, end });
     balHist.push(end);
     charityHist.push(cumCharity);
   }
@@ -691,26 +664,20 @@ function recalculate() {
   const minPayment = capital / af;
   const pvCharity  = minPayment * af;           // = capital when zeroed-out
 
-  // Determine actual payment
-  let actualPayment;
-  if (appMode === 'zeroed') {
-    actualPayment = minPayment;
-    document.getElementById('inp-custom').value = Math.round(minPayment);
-    document.getElementById('pct-slider').value = 100;
-    updateSliderBg(100);
-    document.getElementById('slider-pct-label').textContent = '';
-  } else {
-    const cv = parseFloat(document.getElementById('inp-custom').value);
-    actualPayment = isNaN(cv) ? minPayment : cv;
-    const pct = (actualPayment / minPayment) * 100;
-    const clamped = Math.min(200, Math.max(50, pct));
-    document.getElementById('pct-slider').value = clamped;
-    updateSliderBg(clamped);
-    document.getElementById('slider-pct-label').textContent =
-      pct.toFixed(1) + '% of minimum';
-  }
+  // actualPayment is always currentPct% of the minimum
+  const actualPayment = minPayment * (currentPct / 100);
 
-  const model = runModel(capital, retRate, actualPayment, taxRate, term);
+  // Sync UI controls
+  document.getElementById('inp-custom').value = Math.round(actualPayment);
+  const sliderVal = Math.min(150, Math.max(50, currentPct));
+  document.getElementById('pct-slider').value = sliderVal;
+  updateSliderBg(sliderVal);
+  document.getElementById('slider-pct-label').textContent =
+    Math.abs(currentPct - 100) < 0.01
+      ? '100% of minimum — Zeroed-Out'
+      : currentPct.toFixed(1) + '% of minimum';
+
+  const model = runModel(capital, retRate, actualPayment, taxRate, rate, term);
 
   lastResult = {
     rate, term, capital, retRate, taxRate,
@@ -786,14 +753,14 @@ function renderStatusBadge() {
 
 // ── Sensitivity Table ──────────────────────────────────
 function renderSensTable() {
-  const { minPayment, capital, retRate, taxRate, term, actualPayment, af } = lastResult;
+  const { minPayment, capital, retRate, taxRate, rate, term, actualPayment, af } = lastResult;
   const percents = [75, 90, 100, 110, 125, 150];
   const tbody = document.getElementById('sens-body');
   tbody.innerHTML = '';
 
   percents.forEach(pct => {
     const payment     = minPayment * (pct / 100);
-    const { remainder } = runModel(capital, retRate, payment, taxRate, term);
+    const { remainder } = runModel(capital, retRate, payment, taxRate, rate, term);
     const cumCharity  = payment * term;
     const isActive    = Math.abs(payment - actualPayment) < 0.50;
 
@@ -834,6 +801,7 @@ function renderCFTable() {
       <td class="c-pos">${fmtC(r.growth)}</td>
       <td class="c-neg">(${fmtC(r.charity)})</td>
       <td class="c-warn">${fmtC(r.taxes)}</td>
+      <td class="c-warn">${fmtC(r.pvTax)}</td>
       <td ${r.end < 0 ? 'class="c-neg"' : ''}>${fmtC(r.end)}</td>
     `;
     tbody.appendChild(tr);
@@ -843,6 +811,7 @@ function renderCFTable() {
   const totGrowth  = rows.reduce((s, r) => s + r.growth,  0);
   const totCharity = rows.reduce((s, r) => s + r.charity, 0);
   const totTaxes   = rows.reduce((s, r) => s + r.taxes,   0);
+  const totPvTax   = rows.reduce((s, r) => s + r.pvTax,   0);
   const trTot = document.createElement('tr');
   trTot.classList.add('total-row');
   trTot.innerHTML = `
@@ -851,6 +820,7 @@ function renderCFTable() {
     <td class="c-pos">${fmtC(totGrowth)}</td>
     <td class="c-neg">(${fmtC(totCharity)})</td>
     <td class="c-warn">${fmtC(totTaxes)}</td>
+    <td class="c-warn">${fmtC(totPvTax)}</td>
     <td class="c-rem">${fmtC(remainder)}</td>
   `;
   tbody.appendChild(trTot);
@@ -945,45 +915,31 @@ function renderChart() {
   });
 }
 
-// ── Mode Toggle ────────────────────────────────────────
-function setMode(m) {
-  appMode = m;
-  document.getElementById('btn-zeroed').classList.toggle('active', m === 'zeroed');
-  document.getElementById('btn-custom').classList.toggle('active', m === 'custom');
-  document.getElementById('custom-controls').style.display = m === 'custom' ? 'block' : 'none';
-  if (m === 'custom' && lastResult) {
-    document.getElementById('inp-custom').value = Math.round(lastResult.minPayment);
-  }
-  recalculate();
-}
-
 // ── Slider Sync ────────────────────────────────────────
 function updateSliderBg(pct) {
   const s = document.getElementById('pct-slider');
-  const frac = ((pct - +s.min) / (+s.max - +s.min)) * 100;
+  // s.min=50, s.max=150 — compute fill fraction within that range
+  const frac = ((Math.min(150, Math.max(50, pct)) - 50) / 100) * 100;
   s.style.background =
     `linear-gradient(to right, #2563eb ${frac}%, #e2e8f0 ${frac}%)`;
 }
 
 function onSlider() {
   if (!lastResult) return;
-  const pct     = parseFloat(document.getElementById('pct-slider').value);
-  const payment = lastResult.minPayment * (pct / 100);
-  document.getElementById('inp-custom').value = Math.round(payment);
-  updateSliderBg(pct);
-  document.getElementById('slider-pct-label').textContent = pct.toFixed(0) + '% of minimum';
+  currentPct = parseFloat(document.getElementById('pct-slider').value);
   recalculate();
 }
 
 function onCustomInput() {
   if (!lastResult) return;
   const payment = parseFloat(document.getElementById('inp-custom').value);
-  if (isNaN(payment)) return;
-  const pct     = (payment / lastResult.minPayment) * 100;
-  const clamped = Math.min(200, Math.max(50, pct));
-  document.getElementById('pct-slider').value = clamped;
-  updateSliderBg(clamped);
-  document.getElementById('slider-pct-label').textContent = pct.toFixed(1) + '% of minimum';
+  if (isNaN(payment) || payment <= 0) return;
+  currentPct = (payment / lastResult.minPayment) * 100;
+  recalculate();
+}
+
+function resetToMin() {
+  currentPct = 100;
   recalculate();
 }
 
@@ -1011,10 +967,10 @@ function exportCSV() {
     ['Projected Remainder',        Math.round(remainder)],
     [],
     ['Annual Cash Flow'],
-    ['Year','Opening Balance','Investment Growth','Charitable Contribution','Taxes Due (Grantor)','Ending Balance'],
+    ['Year','Opening Balance','Investment Growth','Charitable Contribution','Taxes Due (Grantor)','PV of Taxes Due','Ending Balance'],
     ...rows.map(r => [r.year, Math.round(r.open), Math.round(r.growth),
-                      Math.round(r.charity), Math.round(r.taxes), Math.round(r.end)]),
-    ['REMAINDER','','','','', Math.round(remainder)],
+                      Math.round(r.charity), Math.round(r.taxes), Math.round(r.pvTax), Math.round(r.end)]),
+    ['REMAINDER','','','','','', Math.round(remainder)],
   ];
 
   const csv  = lines.map(row => row.join(',')).join('\n');

@@ -1,0 +1,119 @@
+# Project Brief: Charitable Lead Annuity Trust (CLAT) Financial Model
+
+## Overview
+Build a single-page front-end web app that models a **Grantor Charitable Lead Annuity Trust (CLAT)** — a tax planning tool where a fixed dollar amount is paid to charity each year for a set term, with remaining assets returning to the grantor or heirs at the end.
+
+The app should be transparent, interactive, and educational — showing the math at every step.
+
+---
+
+## Legal & IRS Background (Researched)
+
+### What is a Grantor CLAT?
+- A **Charitable Lead Annuity Trust (CLAT)** is an irrevocable trust that pays a **fixed dollar annuity** to a qualified charity for a set term of years. At the end of the term, remaining assets pass to non-charitable beneficiaries (the grantor's heirs, or back to the grantor).
+- In a **grantor trust**, the grantor (not the trust) pays income taxes on all trust income each year. This is actually a feature: paying taxes on trust income effectively makes additional tax-free gifts to the remainder beneficiaries.
+- Governed by **IRC § 2055(e)(2)(B)** (gift/estate tax) and **IRC § 170** (income tax deduction for grantor trusts).
+
+### The IRS §7520 Rate (The "Hurdle Rate")
+- Each month, the IRS publishes a **§7520 rate** = 120% of the applicable federal midterm rate, rounded to the nearest 0.2%.
+- This rate is the **IRS discount rate** used to compute the present value of the charitable annuity stream.
+- **Current rates for reference:**
+  - February 2026: **4.60%**
+  - January 2026: **4.60%**
+  - March 2026: **4.80%** (announced)
+  - (The donor may elect to use the rate from either of the two preceding months.)
+- The §7520 rate acts as the **hurdle rate**: if the trust's investment return *exceeds* the §7520 rate, excess growth passes to remainder beneficiaries gift/estate-tax free.
+
+### Gift Tax & the "Zeroed-Out CLAT"
+- When a grantor funds a CLAT, the **gift tax value** of the remainder interest = Contributed Capital − Present Value of the Charitable Annuity Stream.
+- To have **zero gift tax**, set the annual charity payment so that the **present value of all annuity payments = 100% of the contributed capital**. This is called a "zeroed-out CLAT."
+- The present value of an annuity is calculated using standard actuarial formulas with the §7520 rate.
+- Formula for present value of annuity:
+  `PV = Annual Payment × [(1 − (1 + r)^−n) / r]`
+  where `r` = §7520 rate, `n` = number of years
+- Therefore, the **minimum annual charity payment for zero gift tax** = `Contributed Capital / Annuity Factor`
+  where `Annuity Factor = [(1 − (1 + r)^−n) / r]`
+
+### Grantor Trust Tax Treatment
+- The grantor reports **all trust income** on their personal return each year (Form 1040), not the trust.
+- The trust itself does not pay income tax (no Form 1041 for a grantor trust, though Form 5227 is filed annually as a split-interest trust).
+- The grantor receives an **upfront income tax deduction** equal to the present value of the charitable annuity stream (subject to AGI limits: 30% of AGI for appreciated property, 60% for cash; excess carries forward 5 years).
+- Each year, income tax is owed by the grantor on trust earnings (investment return × trust balance). For modeling purposes, assume the grantor pays this from outside the trust — meaning the trust balance is NOT reduced by income taxes (this is the tax benefit of a grantor trust structure).
+- **Important modeling note:** Because the grantor pays taxes personally (not from trust assets), the trust balance grows on a pre-tax basis. This is a key advantage of the grantor CLAT vs. non-grantor structure.
+
+---
+
+## App Structure & User Flow
+
+### Step 1: Inputs
+| Input | Description |
+|---|---|
+| IRS §7520 Rate (%) | Pre-filled with current month's rate (4.60% as of Feb 2026); user can edit |
+| Trust Term (years) | Number of years the trust will pay charity |
+| Capital Contributed ($) | Initial funding amount |
+| Investment Return Assumption (%) | Annual assumed growth rate of trust assets |
+
+### Step 2: Intermediate Calculations (show clearly before the sensitivity section)
+| Output | Formula |
+|---|---|
+| Annuity Factor | `(1 − (1 + §7520 rate)^−n) / §7520 rate` |
+| Minimum Annual Charity Payment (zeroed-out CLAT) | `Contributed Capital / Annuity Factor` |
+| Present Value of Charitable Interest | Should equal contributed capital when zeroed-out |
+| Projected Remainder (end of term) | Sum of compounded growth minus annuity payments |
+
+Show a clear explanation: *"If you pay exactly $X/year to charity, the IRS values that stream at 100% of your contribution, resulting in zero gift tax on the remainder."*
+
+### Step 3: Sensitivity Analysis
+Allow the user to adjust the **actual annual charity contribution** (as a slider or input) above or below the calculated minimum. Show:
+- How the ending balance changes with different contribution amounts
+- A note: contributions above the minimum increase the charitable gift; below the minimum create a taxable gift on the remainder interest
+
+### Step 4: Annual Cash Flow Table
+Show a year-by-year table with these columns:
+
+| Year | Opening Balance | Investment Growth | Charitable Contribution | Taxes Due (Grantor) | Ending Balance |
+|---|---|---|---|---|---|
+
+**Column calculations:**
+- **Opening Balance** = prior year ending balance (Year 1 = contributed capital)
+- **Investment Growth** = Opening Balance × investment return %
+- **Charitable Contribution** = fixed annual payment (user-selected)
+- **Taxes Due (Grantor)** = Investment Growth × assumed marginal tax rate (make this an input, default 37%)
+- **Ending Balance** = Opening Balance + Investment Growth − Charitable Contribution
+  - NOTE: Do NOT subtract taxes from ending balance (grantor pays from personal funds, this is the tax benefit)
+  - DO show taxes as a separate informational column so the grantor can plan cash flow
+- Final row shows **Remainder to Beneficiaries** = ending balance in final year
+
+---
+
+## Design Requirements
+
+- **Single HTML file** — no backend, no database, no build process needed
+- Clean, professional financial app aesthetic (think: financial planning software)
+- All calculations done in JavaScript in the browser
+- Numbers should be formatted as currency with commas ($1,234,567)
+- Percentages formatted to 2 decimal places
+- The cash flow table should be printable / easy to screenshot
+
+---
+
+## Key Assumptions to Document in the App
+1. Annual annuity payments are made at the **end of each year**
+2. Investment growth is applied to the **opening balance** for the year
+3. The grantor pays income taxes **outside the trust** (trust balance unaffected)
+4. The §7520 rate used is the rate in effect at trust creation (user inputs this)
+5. The model assumes a fixed investment return each year (no volatility)
+
+---
+
+## Deployment
+- Deploy to **Vercel** from a GitHub repository
+- Single `index.html` file is sufficient (no framework needed)
+- The app will be for personal use only (no authentication required)
+
+---
+
+## Nice-to-Haves (if time permits)
+- Chart showing trust balance over time vs. cumulative charitable giving
+- Toggle between "zeroed-out" mode and "custom contribution" mode
+- Export to CSV or print-friendly view
